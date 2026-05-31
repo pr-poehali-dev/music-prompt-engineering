@@ -2,7 +2,7 @@ import os
 import json
 import re
 import urllib.request
-# v2 — OpenRouter
+# v3 — OpenAI via proxy
 
 
 def fetch_url_metadata(url: str) -> dict:
@@ -49,10 +49,10 @@ def detect_source(url: str) -> str:
     return 'Web'
 
 
-def call_openrouter(api_key: str, system_prompt: str, user_message: str) -> dict:
-    """Вызывает OpenRouter API через urllib (без внешних зависимостей)."""
+def call_ai(api_key: str, system_prompt: str, user_message: str) -> dict:
+    """Вызывает OpenAI API через европейский прокси (без геоблока)."""
     payload = json.dumps({
-        'model': 'deepseek/deepseek-chat-v3-0324:free',
+        'model': 'gpt-4o-mini',
         'messages': [
             {'role': 'system', 'content': system_prompt},
             {'role': 'user', 'content': user_message},
@@ -63,13 +63,11 @@ def call_openrouter(api_key: str, system_prompt: str, user_message: str) -> dict
     }).encode('utf-8')
 
     req = urllib.request.Request(
-        'https://openrouter.ai/api/v1/chat/completions',
+        'https://api.openai.com/v1/chat/completions',
         data=payload,
         headers={
             'Authorization': f'Bearer {api_key}',
             'Content-Type': 'application/json',
-            'HTTP-Referer': 'https://suno-engineer.pro',
-            'X-Title': 'Suno Engineer Pro',
         },
         method='POST'
     )
@@ -155,7 +153,7 @@ def handler(event: dict, context) -> dict:
 
 Если метаданных мало — используй всё доступное (название, платформу, описание) для определения жанра, энергетики и стиля."""
 
-    result = call_openrouter(os.environ['OPENROUTER_API_KEY'], system_prompt, user_message)
+    result = call_ai(os.environ['OPENAI_API_KEY'], system_prompt, user_message)
 
     style = result.get('style_prompt', '')
     if len(style) > 120:
