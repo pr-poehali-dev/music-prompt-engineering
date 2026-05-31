@@ -1,0 +1,32 @@
+{
+  "tests": [
+    {
+      "name": "Generate Suno prompt from track description",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "description": "Dark synthwave, 130 BPM, aggressive saturated vocals, 808 kick, gated snare, FM lead synth, stadium reverb, punchy mix"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "style": "string",
+        "structure": "string",
+        "notes": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Empty description returns 400",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "description": ""
+      },
+      "expectedStatus": 400,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
