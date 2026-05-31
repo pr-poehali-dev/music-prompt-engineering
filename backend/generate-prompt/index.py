@@ -2,7 +2,7 @@ import os
 import json
 import re
 import urllib.request
-from groq import Groq  # groq>=0.9.0
+from groq import Groq
 
 
 def fetch_url_metadata(url: str) -> dict:
