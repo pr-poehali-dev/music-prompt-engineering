@@ -2,6 +2,7 @@ import os
 import json
 import re
 import urllib.request
+# v2 — OpenRouter
 
 
 def fetch_url_metadata(url: str) -> dict:
@@ -51,7 +52,7 @@ def detect_source(url: str) -> str:
 def call_openrouter(api_key: str, system_prompt: str, user_message: str) -> dict:
     """Вызывает OpenRouter API через urllib (без внешних зависимостей)."""
     payload = json.dumps({
-        'model': 'meta-llama/llama-3.3-70b-instruct:free',
+        'model': 'deepseek/deepseek-chat-v3-0324:free',
         'messages': [
             {'role': 'system', 'content': system_prompt},
             {'role': 'user', 'content': user_message},
