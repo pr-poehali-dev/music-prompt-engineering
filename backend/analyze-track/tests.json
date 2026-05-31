@@ -1,0 +1,27 @@
+{
+  "tests": [
+    {
+      "name": "Analyze track from hitmoz",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "url": "https://rus.hitmoz.org/song/64303963"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "style": "string",
+        "structure": "string",
+        "notes": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Empty URL returns 400",
+      "method": "POST",
+      "path": "/",
+      "body": { "url": "" },
+      "expectedStatus": 400,
+      "bodyMatcher": "partial"
+    }
+  ]
+}
