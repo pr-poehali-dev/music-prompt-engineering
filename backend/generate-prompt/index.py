@@ -2,11 +2,10 @@ import os
 import json
 import re
 import urllib.request
-from groq import Groq
 
 
 def fetch_url_metadata(url: str) -> dict:
-    """Извлекает метаданные страницы по URL (title, og:description и др.)."""
+    """Извлекает og:title, og:description и другие мета-теги страницы трека."""
     try:
         req = urllib.request.Request(
             url,
@@ -35,24 +34,53 @@ def fetch_url_metadata(url: str) -> dict:
 
 
 def detect_source(url: str) -> str:
-    url_lower = url.lower()
-    if 'suno.com' in url_lower or 'suno.ai' in url_lower:
+    u = url.lower()
+    if 'suno.com' in u or 'suno.ai' in u:
         return 'Suno AI'
-    elif 'youtube.com' in url_lower or 'youtu.be' in url_lower:
+    if 'youtube.com' in u or 'youtu.be' in u:
         return 'YouTube'
-    elif 'soundcloud.com' in url_lower:
+    if 'soundcloud.com' in u:
         return 'SoundCloud'
-    elif 'spotify.com' in url_lower:
+    if 'spotify.com' in u:
         return 'Spotify'
-    elif 'bandcamp.com' in url_lower:
+    if 'bandcamp.com' in u:
         return 'Bandcamp'
     return 'Web'
 
 
+def call_openrouter(api_key: str, system_prompt: str, user_message: str) -> dict:
+    """Вызывает OpenRouter API через urllib (без внешних зависимостей)."""
+    payload = json.dumps({
+        'model': 'meta-llama/llama-3.3-70b-instruct:free',
+        'messages': [
+            {'role': 'system', 'content': system_prompt},
+            {'role': 'user', 'content': user_message},
+        ],
+        'temperature': 0.7,
+        'max_tokens': 1500,
+        'response_format': {'type': 'json_object'},
+    }).encode('utf-8')
+
+    req = urllib.request.Request(
+        'https://openrouter.ai/api/v1/chat/completions',
+        data=payload,
+        headers={
+            'Authorization': f'Bearer {api_key}',
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://suno-engineer.pro',
+            'X-Title': 'Suno Engineer Pro',
+        },
+        method='POST'
+    )
+    with urllib.request.urlopen(req, timeout=25) as resp:
+        data = json.loads(resp.read().decode('utf-8'))
+    return json.loads(data['choices'][0]['message']['content'])
+
+
 def handler(event: dict, context) -> dict:
     """
-    Принимает URL трека-референса, парсит метаданные страницы и через Groq (llama-3.3-70b)
-    генерирует три готовых блока для Suno AI: style, structure, engineering_notes.
+    Принимает URL трека-референса, парсит метаданные и через OpenRouter (llama-3.3-70b)
+    генерирует три блока для Suno AI: style, structure, engineering_notes.
     """
     if event.get('httpMethod') == 'OPTIONS':
         return {
@@ -87,10 +115,7 @@ def handler(event: dict, context) -> dict:
     source = detect_source(track_url)
     meta = fetch_url_metadata(track_url)
 
-    context_parts = [
-        f"Источник: {source}",
-        f"URL: {track_url}",
-    ]
+    context_parts = [f'Источник: {source}', f'URL: {track_url}']
     if meta.get('title'):
         context_parts.append(f"Название трека: {meta['title']}")
     if meta.get('description'):
@@ -101,8 +126,6 @@ def handler(event: dict, context) -> dict:
         context_parts.append(f"Заметки пользователя: {extra_notes}")
 
     track_context = '\n'.join(context_parts)
-
-    client = Groq(api_key=os.environ['GROQ_API_KEY'])
 
     system_prompt = """Ты — Suno Reverse Engineer Pro, экспертный AI-звукорежиссёр и специалист по промт-инжинирингу для Suno AI.
 
@@ -131,18 +154,7 @@ def handler(event: dict, context) -> dict:
 
 Если метаданных мало — используй всё доступное (название, платформу, описание) для определения жанра, энергетики и стиля."""
 
-    response = client.chat.completions.create(
-        model='llama-3.3-70b-versatile',
-        messages=[
-            {'role': 'system', 'content': system_prompt},
-            {'role': 'user', 'content': user_message},
-        ],
-        temperature=0.7,
-        max_tokens=1500,
-        response_format={'type': 'json_object'}
-    )
-
-    result = json.loads(response.choices[0].message.content)
+    result = call_openrouter(os.environ['OPENROUTER_API_KEY'], system_prompt, user_message)
 
     style = result.get('style_prompt', '')
     if len(style) > 120:
