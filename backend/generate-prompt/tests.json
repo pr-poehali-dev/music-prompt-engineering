@@ -1,11 +1,11 @@
 {
   "tests": [
     {
-      "name": "Generate Suno prompt from track description",
+      "name": "Generate prompt from YouTube URL",
       "method": "POST",
       "path": "/",
       "body": {
-        "description": "Dark synthwave, 130 BPM, aggressive saturated vocals, 808 kick, gated snare, FM lead synth, stadium reverb, punchy mix"
+        "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
       },
       "expectedStatus": 200,
       "expectedBody": {
@@ -16,11 +16,24 @@
       "bodyMatcher": "partial"
     },
     {
-      "name": "Empty description returns 400",
+      "name": "Empty URL returns 400",
       "method": "POST",
       "path": "/",
       "body": {
-        "description": ""
+        "url": ""
+      },
+      "expectedStatus": 400,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Invalid URL returns 400",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "url": "not-a-url"
       },
       "expectedStatus": 400,
       "expectedBody": {
